@@ -23,6 +23,7 @@ import (
 	"github.com/containers/image/v5/types"
 	"github.com/containers/storage"
 	"github.com/containers/storage/pkg/archive"
+	"github.com/containers/storage/pkg/ioutils"
 	digest "github.com/opencontainers/go-digest"
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/sirupsen/logrus"
@@ -134,11 +135,6 @@ func (s *storageImageSource) GetBlob(ctx context.Context, info types.BlobInfo, c
 			tmpFile.Close()
 		}
 	}()
-	// On Unix and modern Windows (2022 at least) we can eagerly unlink the file to ensure it's automatically
-	// cleaned up on process termination (or if the caller forgets to invoke Close())
-	if err := os.Remove(tmpFile.Name()); err != nil {
-		return nil, 0, err
-	}
 
 	if _, err := io.Copy(tmpFile, rc); err != nil {
 		return nil, 0, err
@@ -148,6 +144,18 @@ func (s *storageImageSource) GetBlob(ctx context.Context, info types.BlobInfo, c
 	}
 
 	success = true
+
+	// On Unix and modern Windows (2022 at least) we can eagerly unlink the file to ensure it's automatically
+	// cleaned up on process termination (or if the caller forgets to invoke Close())
+	// This isn't supported on all Windows, so fallback to relying on caller to Close()
+	if err := os.Remove(tmpFile.Name()); err != nil {
+		return ioutils.NewReadCloserWrapper(tmpFile, func() error {
+			tmpFile.Close()
+			os.Remove(tmpFile.Name())
+			return nil
+		}), n, nil
+	}
+
 	return tmpFile, n, nil
 }
 
