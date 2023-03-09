@@ -48,6 +48,16 @@ func SupportedSchema2MediaType(m string) error {
 	}
 }
 
+// SupportedSchema2LayerMediaType checks if the specified string is a supported Docker v2s2 layer media type.
+func SupportedSchema2LayerMediaType(m string) error {
+	switch m {
+	case DockerV2Schema2ForeignLayerMediaType, DockerV2Schema2ForeignLayerMediaTypeGzip, DockerV2Schema2LayerMediaType, DockerV2Schema2MediaType, DockerV2SchemaLayerMediaTypeUncompressed:
+		return nil
+	default:
+		return fmt.Errorf("unsupported docker v2s2 layer media type: %q", m)
+	}
+}
+
 // DefaultRequestedManifestMIMETypes is a list of MIME types a types.ImageSource
 // should request from the backend unless directed otherwise.
 var DefaultRequestedManifestMIMETypes = []string{

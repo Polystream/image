@@ -49,6 +49,17 @@ func SupportedOCI1MediaType(m string) error {
 	}
 }
 
+// SupportedOCI1MediaType checks if the specified string is a supported OCI1
+// layer media type.
+func SupportedOCI1LayerMediaType(m string) error {
+	switch m {
+	case imgspecv1.MediaTypeImageLayer, imgspecv1.MediaTypeImageLayerGzip, imgspecv1.MediaTypeImageLayerNonDistributable, imgspecv1.MediaTypeImageLayerNonDistributableGzip, imgspecv1.MediaTypeImageLayerNonDistributableZstd, imgspecv1.MediaTypeImageLayerZstd, ociencspec.MediaTypeLayerEnc, ociencspec.MediaTypeLayerGzipEnc:
+		return nil
+	default:
+		return fmt.Errorf("unsupported OCIv1 layer media type: %q", m)
+	}
+}
+
 // OCI1FromManifest creates an OCI1 manifest instance from a manifest blob.
 func OCI1FromManifest(manifestBlob []byte) (*OCI1, error) {
 	oci1 := OCI1{}

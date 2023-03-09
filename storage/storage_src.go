@@ -291,10 +291,17 @@ func buildLayerInfosForCopy(manifestInfos []manifest.LayerInfo, physicalInfos []
 	nextPhysical := 0
 	res := make([]types.BlobInfo, len(manifestInfos))
 	for i, mi := range manifestInfos {
+		supportedLayerType := manifest.SupportedOCI1LayerMediaType(mi.MediaType) == nil || manifest.SupportedSchema2LayerMediaType(mi.MediaType) == nil
 		if mi.EmptyLayer {
 			res[i] = types.BlobInfo{
 				Digest:    image.GzippedEmptyLayerDigest,
 				Size:      int64(len(image.GzippedEmptyLayer)),
+				MediaType: mi.MediaType,
+			}
+		} else if !supportedLayerType {
+			res[i] = types.BlobInfo{
+				Digest:    mi.Digest,
+				Size:      mi.Size,
 				MediaType: mi.MediaType,
 			}
 		} else {

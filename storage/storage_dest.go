@@ -733,7 +733,13 @@ func (s *storageImageDestination) Commit(ctx context.Context, unparsedToplevel t
 	if err != nil {
 		return fmt.Errorf("parsing manifest: %w", err)
 	}
-	layerBlobs := man.LayerInfos()
+	var layerBlobs []manifest.LayerInfo
+	for _, l := range man.LayerInfos() {
+		supportedLayerType := manifest.SupportedOCI1LayerMediaType(l.MediaType) == nil || manifest.SupportedSchema2LayerMediaType(l.MediaType) == nil
+		if supportedLayerType {
+			layerBlobs = append(layerBlobs, l)
+		}
+	}
 
 	// Extract, commit, or find the layers.
 	for i, blob := range layerBlobs {
