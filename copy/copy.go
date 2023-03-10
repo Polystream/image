@@ -827,6 +827,9 @@ func checkImageDestinationForCurrentRuntime(ctx context.Context, sys *types.Syst
 	if dest.MustMatchRuntimeOS() {
 		c, err := src.OCIConfig(ctx)
 		if err != nil {
+			if _, ok := err.(internalManifest.NonImageArtifactError); ok {
+				return nil
+			}
 			return fmt.Errorf("parsing image configuration: %w", err)
 		}
 		wantedPlatforms, err := platform.WantedPlatforms(sys)
