@@ -272,8 +272,5 @@ func (m *OCI1) ImageID([]digest.Digest) (string, error) {
 // NOTE: Even if this returns true, the relevant format might not accept all compression algorithms; the set of accepted
 // algorithms depends not on the current format, but possibly on the target of a conversion.
 func (m *OCI1) CanChangeLayerCompression(mimeType string) bool {
-	if m.Config.MediaType != imgspecv1.MediaTypeImageConfig {
-		return false
-	}
 	return compressionVariantsRecognizeMIMEType(oci1CompressionMIMETypeSets, mimeType)
 }
