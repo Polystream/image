@@ -257,9 +257,11 @@ func (c *copier) copySingleImage(ctx context.Context, policyContext *signature.P
 	}
 	sigs = append(sigs, newSigs...)
 
-	c.Printf("Storing signatures\n")
-	if err := c.dest.PutSignaturesWithFormat(ctx, sigs, targetInstance); err != nil {
-		return nil, "", "", fmt.Errorf("writing signatures: %w", err)
+	if len(sigs) > 0 {
+		c.Printf("Storing signatures\n")
+		if err := c.dest.PutSignaturesWithFormat(ctx, sigs, targetInstance); err != nil {
+			return nil, "", "", fmt.Errorf("writing signatures: %w", err)
+		}
 	}
 
 	return manifestBytes, retManifestType, retManifestDigest, nil
@@ -338,6 +340,7 @@ func compareImageDestinationManifestEqual(ctx context.Context, options *Options,
 		logrus.Debugf("Unable to create destination image %s source: %v", dest.Reference(), err)
 		return false, nil, "", "", nil
 	}
+	defer destImageSource.Close()
 
 	destManifest, destManifestType, err := destImageSource.GetManifest(ctx, targetInstance)
 	if err != nil {
@@ -743,9 +746,9 @@ func updatedBlobInfoFromReuse(inputInfo types.BlobInfo, reusedBlob private.Reuse
 	res := types.BlobInfo{
 		Digest:               reusedBlob.Digest,
 		Size:                 reusedBlob.Size,
-		URLs:                 nil, // This _must_ be cleared if Digest changes; clear it in other cases as well, to preserve previous behavior.
-		Annotations:          inputInfo.Annotations,
-		MediaType:            inputInfo.MediaType, // Mostly irrelevant, MediaType is updated based on Compression*/CryptoOperation.
+		URLs:                 nil,                   // This _must_ be cleared if Digest changes; clear it in other cases as well, to preserve previous behavior.
+		Annotations:          inputInfo.Annotations, // FIXME: This should remove zstd:chunked annotations (but those annotations being left with incorrect values should not break pulls)
+		MediaType:            inputInfo.MediaType,   // Mostly irrelevant, MediaType is updated based on Compression*/CryptoOperation.
 		CompressionOperation: reusedBlob.CompressionOperation,
 		CompressionAlgorithm: reusedBlob.CompressionAlgorithm,
 		CryptoOperation:      inputInfo.CryptoOperation, // Expected to be unset anyway.
