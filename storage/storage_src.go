@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/containers/storage/pkg/ioutils"
 	"io"
 	"os"
 	"sync"
@@ -136,8 +137,10 @@ func (s *storageImageSource) GetBlob(ctx context.Context, info types.BlobInfo, c
 	}()
 	// On Unix and modern Windows (2022 at least) we can eagerly unlink the file to ensure it's automatically
 	// cleaned up on process termination (or if the caller forgets to invoke Close())
+	// On older versions of Windows we will have to fallback to relying on the caller to invoke Close()
+	removeFailure := false
 	if err := os.Remove(tmpFile.Name()); err != nil {
-		return nil, 0, err
+		removeFailure = true
 	}
 
 	if _, err := io.Copy(tmpFile, rc); err != nil {
@@ -148,6 +151,14 @@ func (s *storageImageSource) GetBlob(ctx context.Context, info types.BlobInfo, c
 	}
 
 	success = true
+
+	if removeFailure {
+		return ioutils.NewReadCloserWrapper(tmpFile, func() error {
+			tmpFile.Close()
+			return os.Remove(tmpFile.Name())
+		}), n, nil
+	}
+
 	return tmpFile, n, nil
 }
 
